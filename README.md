@@ -3,9 +3,22 @@
 [![macOS](https://github.com/ceres-solver/ceres-solver/actions/workflows/macos.yml/badge.svg)](https://github.com/ceres-solver/ceres-solver/actions/workflows/macos.yml)
 [![Windows](https://github.com/ceres-solver/ceres-solver/actions/workflows/windows.yml/badge.svg)](https://github.com/ceres-solver/ceres-solver/actions/workflows/windows.yml)
 
-Ceres Solver
-============
+Ceres Solver with Generic Marginalization
+==========================================
+Usage looks like this:
 
+```
+ceres::Problem problem;
+...
+MarginalizeOutVariablesQR(MarginalizationOptionsQR(),
+                          {&variable_to_marginalize},
+                          &problem);
+```
+
+See [https://evanlev.github.io/marginalization.pdf](https://evanlev.github.io/marginalization.pdf) for more info.
+
+About the Ceres Solver
+=======================
 Ceres Solver is an open source C++ library for modeling and solving
 large, complicated optimization problems. It is a feature rich, mature
 and performant library which has been used in production at Google
@@ -16,3 +29,4 @@ since 2010. Ceres Solver can solve two kinds of problems.
 
 Please see [ceres-solver.org](http://ceres-solver.org/) for more
 information.
+
