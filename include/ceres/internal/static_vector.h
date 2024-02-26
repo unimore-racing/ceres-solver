@@ -1,5 +1,5 @@
 // Ceres Solver - A fast non-linear least squares minimizer
-// Copyright 2024 Google Inc. All rights reserved.
+// Copyright 2023 Google Inc. All rights reserved.
 // http://ceres-solver.org/
 //
 // Redistribution and use in source and binary forms, with or without
@@ -26,48 +26,66 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 //
-// Author: keir@google.com (Keir Mierle)
+// Author: darius.rueckert@fau.de (Darius Rueckert)
 //
-// A convenience class for cost functions which are statically sized.
-// Compared to the dynamically-sized base class, this reduces boilerplate.
-//
-// The kNumResiduals template parameter can be a constant such as 2 or 5, or it
-// can be ceres::DYNAMIC. If kNumResiduals is ceres::DYNAMIC, then subclasses
-// are responsible for calling set_num_residuals() at runtime.
 
-#ifndef CERES_PUBLIC_SIZED_COST_FUNCTION_H_
-#define CERES_PUBLIC_SIZED_COST_FUNCTION_H_
+#ifndef CERES_PUBLIC_INTERNAL_STATIC_VECTOR_H_
+#define CERES_PUBLIC_INTERNAL_STATIC_VECTOR_H_
 
-#include <cstddef>
-#include <initializer_list>
+#include <glog/logging.h>
 
-#include "ceres/cost_function.h"
-#include "ceres/types.h"
-#include "internal/parameter_dims.h"
+#include <array>
+#include <vector>
 
-namespace ceres {
+namespace ceres::internal {
 
-template <int kNumResiduals, int... Ns>
-class SizedCostFunction : public CostFunction {
+template <typename Tp, std::size_t Nm>
+class CERES_NO_EXPORT StaticVector {
  public:
-  static_assert(kNumResiduals > 0 || kNumResiduals == DYNAMIC,
-                "Cost functions must have at least one residual block.");
-  static_assert(internal::StaticParameterDims<Ns...>::kIsValid,
-                "Invalid parameter block dimension detected. Each parameter "
-                "block dimension must be bigger than zero.");
+  typedef Tp* iterator;
+  typedef const Tp* const_iterator;
 
-  using ParameterDims = internal::StaticParameterDims<Ns...>;
-
-  SizedCostFunction() {
-    set_num_residuals(kNumResiduals);
-    for(const auto& p : {Ns...}){
-      mutable_parameter_block_sizes()->push_back(p);
-    }
+  void push_back(const Tp& x) {
+    CHECK(mSize < Nm);
+    mData[mSize] = x;
+    mSize++;
   }
 
-  // Subclasses must implement Evaluate().
+  Tp& at(std::size_t aIndex) { return mData[aIndex]; }
+
+  const Tp& at(std::size_t aIndex) const { return mData[aIndex]; }
+
+  Tp* data() { return mData; }
+
+  const Tp* data() const { return mData; }
+
+  std::size_t size() const { return mSize; }
+
+  Tp& operator[](std::size_t aIndex) { return mData[aIndex]; }
+
+  const Tp& operator[](std::size_t aIndex) const { return mData[aIndex]; }
+
+  bool empty() const { return mSize == 0; }
+
+  iterator begin() noexcept { return iterator(data()); }
+
+  const_iterator begin() const noexcept { return const_iterator(data()); }
+
+  iterator end() noexcept { return iterator(data() + mSize); }
+
+  const_iterator end() const noexcept { return const_iterator(data() + mSize); }
+
+ private:
+  std::size_t mSize{0};
+  Tp mData[Nm];
 };
 
-}  // namespace ceres
+template <typename _Tp, std::size_t _Nm>
+inline bool operator==(const StaticVector<_Tp, _Nm>& __one,
+                       const StaticVector<_Tp, _Nm>& __two) {
+  return std::equal(__one.begin(), __one.end(), __two.begin());
+}
 
-#endif  // CERES_PUBLIC_SIZED_COST_FUNCTION_H_
+}  // namespace ceres::internal
+
+#endif  // CERES_PUBLIC_INTERNAL_ARRAY_SELECTOR_H_

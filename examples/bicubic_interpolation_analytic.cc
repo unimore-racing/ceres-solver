@@ -78,7 +78,7 @@ struct AnalyticBiCubicCost : public ceres::CostFunction {
                       double value)
       : point_(std::move(point)), value_(value), interpolator_(interpolator) {
     set_num_residuals(1);
-    *mutable_parameter_block_sizes() = {2};
+    mutable_parameter_block_sizes()->push_back(2);
   }
 
   static ceres::CostFunction* Create(const Interpolator& interpolator,

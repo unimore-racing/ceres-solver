@@ -122,7 +122,7 @@ class CERES_EXPORT DynamicCostFunctionToFunctor {
 
   template <typename JetT>
   bool operator()(JetT const* const* inputs, JetT* output) const {
-    const std::vector<int32_t>& parameter_block_sizes =
+    const auto& parameter_block_sizes =
         cost_function_->parameter_block_sizes();
     const int num_parameter_blocks =
         static_cast<int>(parameter_block_sizes.size());

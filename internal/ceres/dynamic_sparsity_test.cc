@@ -374,7 +374,7 @@ TEST(DynamicSparsity, StaticAndDynamicSparsityProduceSameSolution) {
   }
 
   // Problem configuration.
-  const int num_segments = 151;
+  const int num_segments = 31;
   const double regularization_weight = 1e-2;
 
   // `X` is the matrix of control points which make up the contour of line

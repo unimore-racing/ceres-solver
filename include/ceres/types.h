@@ -558,6 +558,8 @@ CERES_EXPORT bool IsSparseLinearAlgebraLibraryTypeAvailable(
 CERES_EXPORT bool IsDenseLinearAlgebraLibraryTypeAvailable(
     DenseLinearAlgebraLibraryType type);
 
+#define CERES_MAX_PARAMETERS_COUNT_PER_RESIDUAL_BLOCK 32
+
 }  // namespace ceres
 
 #include "ceres/internal/reenable_warnings.h"

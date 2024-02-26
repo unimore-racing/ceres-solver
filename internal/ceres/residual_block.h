@@ -42,6 +42,7 @@
 #include "ceres/cost_function.h"
 #include "ceres/internal/disable_warnings.h"
 #include "ceres/internal/export.h"
+#include "ceres/internal/static_vector.h"
 #include "ceres/stringprintf.h"
 #include "ceres/types.h"
 
@@ -112,7 +113,7 @@ class CERES_NO_EXPORT ResidualBlock {
   // Access the parameter blocks for this residual. The array has size
   // NumParameterBlocks().
   ParameterBlock* const* parameter_blocks() const {
-    return parameter_blocks_.get();
+    return parameter_blocks_.data();
   }
 
   // Number of variable blocks that this residual term depends on.
@@ -137,7 +138,7 @@ class CERES_NO_EXPORT ResidualBlock {
  private:
   const CostFunction* cost_function_;
   const LossFunction* loss_function_;
-  std::unique_ptr<ParameterBlock*[]> parameter_blocks_;
+  internal::StaticVector<ParameterBlock*, CERES_MAX_PARAMETERS_COUNT_PER_RESIDUAL_BLOCK> parameter_blocks_;
 
   // The index of the residual, typically in a Program. This is only to permit
   // switching from a ResidualBlock* to an index in the Program's array, needed

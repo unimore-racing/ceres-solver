@@ -70,7 +70,7 @@ class GradientCheckingCostFunction final : public CostFunction {
         extra_info_(std::move(extra_info)),
         callback_(callback) {
     CHECK(callback_ != nullptr);
-    const std::vector<int32_t>& parameter_block_sizes =
+    const auto& parameter_block_sizes =
         function->parameter_block_sizes();
     *mutable_parameter_block_sizes() = parameter_block_sizes;
     set_num_residuals(function->num_residuals());
@@ -99,8 +99,7 @@ class GradientCheckingCostFunction final : public CostFunction {
     MatrixRef(residuals, num_residuals, 1) = results.residuals;
 
     // Copy the original jacobian blocks into the jacobians array.
-    const std::vector<int32_t>& block_sizes =
-        function_->parameter_block_sizes();
+    const auto& block_sizes = function_->parameter_block_sizes();
     for (int k = 0; k < block_sizes.size(); k++) {
       if (jacobians[k] != nullptr) {
         MatrixRef(jacobians[k],

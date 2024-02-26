@@ -38,6 +38,7 @@
 #include <memory>
 #include <set>
 #include <string>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 
@@ -86,7 +87,7 @@ void CheckForNoAliasing(double* existing_block,
 
 template <typename KeyType>
 void DecrementValueOrDeleteKey(const KeyType key,
-                               std::map<KeyType, int>* container) {
+                               std::unordered_map<KeyType, int>* container) {
   auto it = container->find(key);
   if (it->second == 1) {
     delete key;
@@ -136,7 +137,7 @@ ParameterBlock* ProblemImpl::InternalAddParameterBlock(double* values,
     }
     return it->second;
   }
-
+#if 0
   if (!options_.disable_all_safety_checks) {
     // Before adding the parameter block, also check that it doesn't alias any
     // other parameter blocks.
@@ -157,7 +158,7 @@ ParameterBlock* ProblemImpl::InternalAddParameterBlock(double* values,
       }
     }
   }
-
+#endif
   // Pass the index of the new parameter block as well to keep the index in
   // sync with the position of the parameter in the program's parameter vector.
   auto* new_parameter_block =
@@ -186,9 +187,6 @@ void ProblemImpl::InternalRemoveResidualBlock(ResidualBlock* residual_block) {
       residual_block->parameter_blocks()[i]->RemoveResidualBlock(
           residual_block);
     }
-
-    auto it = residual_block_set_.find(residual_block);
-    residual_block_set_.erase(it);
   }
   DeleteBlockInVector(program_->mutable_residual_blocks(), residual_block);
 }
@@ -273,8 +271,7 @@ ResidualBlockId ProblemImpl::AddResidualBlock(
   CHECK_EQ(num_parameter_blocks, cost_function->parameter_block_sizes().size());
 
   // Check the sizes match.
-  const std::vector<int32_t>& parameter_block_sizes =
-      cost_function->parameter_block_sizes();
+  const auto& parameter_block_sizes = cost_function->parameter_block_sizes();
 
   if (!options_.disable_all_safety_checks) {
     CHECK_EQ(parameter_block_sizes.size(), num_parameter_blocks)
@@ -302,43 +299,39 @@ ResidualBlockId ProblemImpl::AddResidualBlock(
   }
 
   // Add parameter blocks and convert the double*'s to parameter blocks.
-  std::vector<ParameterBlock*> parameter_block_ptrs(num_parameter_blocks);
+  parameter_block_ptrs_buffer.resize(num_parameter_blocks);
   for (int i = 0; i < num_parameter_blocks; ++i) {
-    parameter_block_ptrs[i] = InternalAddParameterBlock(
+    parameter_block_ptrs_buffer[i] = InternalAddParameterBlock(
         parameter_blocks[i], parameter_block_sizes[i]);
   }
 
   if (!options_.disable_all_safety_checks) {
     // Check that the block sizes match the block sizes expected by the
     // cost_function.
-    for (int i = 0; i < parameter_block_ptrs.size(); ++i) {
+    for (int i = 0; i < parameter_block_ptrs_buffer.size(); ++i) {
       CHECK_EQ(cost_function->parameter_block_sizes()[i],
-               parameter_block_ptrs[i]->Size())
+               parameter_block_ptrs_buffer[i]->Size())
           << "The cost function expects parameter block " << i << " of size "
           << cost_function->parameter_block_sizes()[i]
           << " but was given a block of size "
-          << parameter_block_ptrs[i]->Size();
+          << parameter_block_ptrs_buffer[i]->Size();
     }
   }
 
   auto* new_residual_block =
       new ResidualBlock(cost_function,
                         loss_function,
-                        parameter_block_ptrs,
+                        parameter_block_ptrs_buffer,
                         program_->residual_blocks_.size());
 
   // Add dependencies on the residual to the parameter blocks.
   if (options_.enable_fast_removal) {
     for (int i = 0; i < num_parameter_blocks; ++i) {
-      parameter_block_ptrs[i]->AddResidualBlock(new_residual_block);
+      parameter_block_ptrs_buffer[i]->AddResidualBlock(new_residual_block);
     }
   }
 
   program_->residual_blocks_.push_back(new_residual_block);
-
-  if (options_.enable_fast_removal) {
-    residual_block_set_.insert(new_residual_block);
-  }
 
   if (options_.cost_function_ownership == TAKE_OWNERSHIP) {
     // Increment the reference count, creating an entry in the table if
@@ -405,7 +398,8 @@ void ProblemImpl::DeleteBlockInVector(std::vector<Block*>* mutable_blocks,
 void ProblemImpl::RemoveResidualBlock(ResidualBlock* residual_block) {
   CHECK(residual_block != nullptr);
 
-  // Verify that residual_block identifies a residual in the current problem.
+// Verify that residual_block identifies a residual in the current problem.
+#if 0
   const std::string residual_not_found_message = StringPrintf(
       "Residual block to remove: %p not found. This usually means "
       "one of three things have happened:\n"
@@ -418,17 +412,14 @@ void ProblemImpl::RemoveResidualBlock(ResidualBlock* residual_block) {
       " 3) residual_block referred to a residual that has already "
       "been removed from the problem (by the user).",
       residual_block);
-  if (options_.enable_fast_removal) {
-    CHECK(residual_block_set_.find(residual_block) != residual_block_set_.end())
-        << residual_not_found_message;
-  } else {
-    // Perform a full search over all current residuals.
+#endif
+
+  if (!options_.disable_all_safety_checks) {
     CHECK(std::find(program_->residual_blocks().begin(),
                     program_->residual_blocks().end(),
                     residual_block) != program_->residual_blocks().end())
-        << residual_not_found_message;
+        << "Residual to remove not found";
   }
-
   InternalRemoveResidualBlock(residual_block);
 }
 

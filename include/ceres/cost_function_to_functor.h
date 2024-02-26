@@ -86,6 +86,7 @@
 #ifndef CERES_PUBLIC_COST_FUNCTION_TO_FUNCTOR_H_
 #define CERES_PUBLIC_COST_FUNCTION_TO_FUNCTOR_H_
 
+#include <cstddef>
 #include <cstdint>
 #include <numeric>
 #include <tuple>
@@ -113,7 +114,7 @@ class CostFunctionToFunctor {
     CHECK(cost_functor_.function() != nullptr);
     CHECK(kNumResiduals > 0 || kNumResiduals == DYNAMIC);
 
-    const std::vector<int32_t>& parameter_block_sizes =
+    const auto& parameter_block_sizes =
         cost_functor_.function()->parameter_block_sizes();
     const int num_parameter_blocks = ParameterDims::kNumParameterBlocks;
     CHECK_EQ(static_cast<int>(parameter_block_sizes.size()),
@@ -127,7 +128,7 @@ class CostFunctionToFunctor {
       }
     }
 
-    CHECK_EQ(accumulate(
+    CHECK_EQ(std::accumulate(
                  parameter_block_sizes.begin(), parameter_block_sizes.end(), 0),
              ParameterDims::kNumParameters);
   }

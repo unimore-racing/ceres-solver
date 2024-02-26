@@ -54,6 +54,8 @@
 #include "ceres/problem.h"
 #include "ceres/types.h"
 
+#include "ceres/internal/robin_hood.h"
+
 namespace ceres {
 
 class CostFunction;
@@ -68,10 +70,11 @@ class ResidualBlock;
 
 class CERES_NO_EXPORT ProblemImpl {
  public:
-  using ParameterMap = std::map<double*, ParameterBlock*>;
+  //using ParameterMap = std::unordered_map<double*, ParameterBlock*>;
+  using ParameterMap = robin_hood::unordered_map<double*, ParameterBlock*>;
   using ResidualBlockSet = std::unordered_set<ResidualBlock*>;
-  using CostFunctionRefCount = std::map<CostFunction*, int>;
-  using LossFunctionRefCount = std::map<LossFunction*, int>;
+  using CostFunctionRefCount = std::unordered_map<CostFunction*, int>;
+  using LossFunctionRefCount = std::unordered_map<LossFunction*, int>;
 
   ProblemImpl();
   explicit ProblemImpl(const Problem::Options& options);
@@ -160,11 +163,11 @@ class CERES_NO_EXPORT ProblemImpl {
   Program* mutable_program() { return program_.get(); }
 
   const ParameterMap& parameter_map() const { return parameter_block_map_; }
-  const ResidualBlockSet& residual_block_set() const {
-    CHECK(options_.enable_fast_removal)
-        << "Fast removal not enabled, residual_block_set is not maintained.";
-    return residual_block_set_;
-  }
+  // const ResidualBlockSet& residual_block_set() const {
+  //   CHECK(options_.enable_fast_removal)
+  //       << "Fast removal not enabled, residual_block_set is not maintained.";
+  //   return residual_block_set_;
+  // }
 
   const Problem::Options& options() const { return options_; }
 
@@ -192,11 +195,14 @@ class CERES_NO_EXPORT ProblemImpl {
   bool context_impl_owned_;
   ContextImpl* context_impl_;
 
+  std::vector<ParameterBlock*> parameter_block_ptrs_buffer{
+      CERES_MAX_PARAMETERS_COUNT_PER_RESIDUAL_BLOCK};
+
   // The mapping from user pointers to parameter blocks.
   ParameterMap parameter_block_map_;
 
   // Iff enable_fast_removal is enabled, contains the current residual blocks.
-  ResidualBlockSet residual_block_set_;
+  // ResidualBlockSet residual_block_set_;
 
   // The actual parameter and residual blocks.
   std::unique_ptr<internal::Program> program_;

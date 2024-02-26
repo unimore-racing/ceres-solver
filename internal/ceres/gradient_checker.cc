@@ -62,7 +62,7 @@ bool EvaluateCostFunction(const CostFunction* function,
   CHECK(jacobians != nullptr);
   CHECK(local_jacobians != nullptr);
 
-  const std::vector<int32_t>& block_sizes = function->parameter_block_sizes();
+  const auto& block_sizes = function->parameter_block_sizes();
   const int num_parameter_blocks = block_sizes.size();
 
   // Allocate Jacobian matrices in tangent space.
@@ -127,7 +127,7 @@ GradientChecker::GradientChecker(const CostFunction* function,
   auto finite_diff_cost_function =
       std::make_unique<DynamicNumericDiffCostFunction<CostFunction, RIDDERS>>(
           function, DO_NOT_TAKE_OWNERSHIP, options);
-  const std::vector<int32_t>& parameter_block_sizes =
+  const auto& parameter_block_sizes =
       function->parameter_block_sizes();
   const int num_parameter_blocks = parameter_block_sizes.size();
   for (int i = 0; i < num_parameter_blocks; ++i) {

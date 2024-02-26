@@ -44,11 +44,18 @@
 #ifndef CERES_PUBLIC_COST_FUNCTION_H_
 #define CERES_PUBLIC_COST_FUNCTION_H_
 
+#include <glog/logging.h>
+
+#include <array>
+#include <cstddef>
 #include <cstdint>
+#include <iostream>
 #include <vector>
 
 #include "ceres/internal/disable_warnings.h"
 #include "ceres/internal/export.h"
+#include "ceres/internal/static_vector.h"
+#include "ceres/types.h"
 
 namespace ceres {
 
@@ -63,6 +70,8 @@ namespace ceres {
 // when added with AddResidualBlock().
 class CERES_EXPORT CostFunction {
  public:
+  using ParameterBlockSizesVector = internal::StaticVector<int32_t, CERES_MAX_PARAMETERS_COUNT_PER_RESIDUAL_BLOCK>;
+
   CostFunction();
   CostFunction(const CostFunction&) = delete;
   CostFunction& operator=(const CostFunction&) = delete;
@@ -117,7 +126,7 @@ class CERES_EXPORT CostFunction {
                         double* residuals,
                         double** jacobians) const = 0;
 
-  const std::vector<int32_t>& parameter_block_sizes() const {
+  const ParameterBlockSizesVector& parameter_block_sizes() const {
     return parameter_block_sizes_;
   }
 
@@ -128,7 +137,7 @@ class CERES_EXPORT CostFunction {
   CostFunction(CostFunction&& other) noexcept;
   CostFunction& operator=(CostFunction&& other) noexcept;
 
-  std::vector<int32_t>* mutable_parameter_block_sizes() {
+  ParameterBlockSizesVector* mutable_parameter_block_sizes() {
     return &parameter_block_sizes_;
   }
 
@@ -137,7 +146,8 @@ class CERES_EXPORT CostFunction {
  private:
   // Cost function signature metadata: number of inputs & their sizes,
   // number of outputs (residuals).
-  std::vector<int32_t> parameter_block_sizes_;
+
+  ParameterBlockSizesVector parameter_block_sizes_;
   int num_residuals_;
 };
 

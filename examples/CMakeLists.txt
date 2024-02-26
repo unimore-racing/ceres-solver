@@ -28,6 +28,9 @@
 #
 # Author: keir@google.com (Keir Mierle)
 
+add_executable(add_remove_benchmark add_remove_benchmark.cc)
+target_link_libraries(add_remove_benchmark PRIVATE Ceres::ceres)
+
 add_executable(helloworld helloworld.cc)
 target_link_libraries(helloworld PRIVATE Ceres::ceres)
 
