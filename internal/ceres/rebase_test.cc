@@ -21,7 +21,7 @@
 #include "ceres/parameter_block.h"
 #include "ceres/problem.h"
 #include "ceres/program.h"
-#include "ceres/random.h"
+// #include "ceres/random.h"
 #include "ceres/rebase.h"
 #include "ceres/residual_block.h"
 #include "ceres/sized_cost_function.h"
