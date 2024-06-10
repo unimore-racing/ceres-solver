@@ -99,7 +99,6 @@ namespace ceres {
 struct MarginalizationOptionsQR {
   // For "QR," this is the rank threshold in the QR factorization.
   double rank_threshold = 1e-10;
-
   bool compute_jacobian_condition_number = false;
 };
 
@@ -117,7 +116,8 @@ struct MarginalizationOptionsSchur {
   // variables is full rank ( H_{mm}).
   bool assume_marginalized_block_is_full_rank = false;
 
-  // Compute the condition number of the jacobian [Jb, Jm] for the problem containing the blocks to marginalize and their blanket.
+  // Compute the condition number of the jacobian [Jb, Jm] for the problem
+  // containing the blocks to marginalize and their blanket.
   bool compute_jacobian_condition_number = false;
 
   // For "Eigendecomposition," this is the eigenvalue threshold for
@@ -132,21 +132,35 @@ struct MarginalizationOptionsSchur {
   size_t max_ldlt_failure_fix_attempts = 0;
 };
 
-struct MarginalizationSummarySchur
-{
+struct MarginalizationSummary {
+  int marginalized_parameter_blocks;
+  int marginalized_parameters;
+  int marginalized_parameters_tangent;
+  int blanket_parameter_blocks;
+  int blanket_parameters;
+  int blanket_parameters_tangent;
+  int subproblem_parameter_blocks;
+  int subproblem_parameters;
+  int subproblem_residual_blocks;
+  int subproblem_residuals;
+  double time_subproblem_build;
+  double time_subproblem_eval;
+  double time_qr;
+  double time_total;
+  double cost;
+
+  int qr_marginalization_rank;
+  int qr_total_rank;
+
   std::optional<double> condition_number_jacobian;
 
   // Valid if Method::Eigendecomposition is used.
   std::optional<double> condition_number_marginal_information;
 
   // Valid if Method::ModifiedLDLT or Method::LDLT is used.
-  // This is the Frobenius norm of the perturbation of \Lambda_t used in the factorization.
+  // This is the Frobenius norm of the perturbation of \Lambda_t used in the
+  // factorization.
   double ldlt_perturbation_norm;
-};
-
-struct MarginalizationSummaryQR
-{
-  std::optional<double> condition_number_jacobian;
 };
 
 // Marginalize out a set of variables. If the computation fails, returns false
@@ -164,7 +178,7 @@ struct MarginalizationSummaryQR
     std::vector<ResidualBlockId>* marginalization_prior_ids,
     const std::map<const double*, const double*>*
         parameter_block_linearization_states = nullptr,
-    MarginalizationSummaryQR* summary = nullptr);
+    MarginalizationSummary* summary = nullptr);
 
 [[nodiscard]] bool MarginalizeOutVariablesSchur(
     const MarginalizationOptionsSchur& options,
@@ -173,7 +187,7 @@ struct MarginalizationSummaryQR
     std::vector<ResidualBlockId>* marginalization_prior_ids,
     const std::map<const double*, const double*>*
         parameter_block_linearization_states = nullptr,
-    MarginalizationSummarySchur* summary = nullptr);
+    MarginalizationSummary* summary = nullptr);
 
 [[nodiscard]] bool MarginalizeOutVariableAfterRebase(
     const MarginalizationOptionsSchur& options,

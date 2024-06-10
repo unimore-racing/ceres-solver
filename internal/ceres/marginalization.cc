@@ -485,7 +485,7 @@ void EvaluateProblem(const int num_elimination_blocks,
 // are provided, they are used as linearization points and the reference point
 // for the marginalization prior cost function returned. The parameter blocks
 // for the Markov blanket are turned in blanket_parameter_blocks_problem_states.
-template <typename MarginalizationOptionsType, typename SummaryType>
+template <typename MarginalizationOptionsType>
 CostFunction* ComputeMarginalizationPrior(
     const MarginalizationOptionsType& options,
     const Problem& external_problem,
@@ -493,7 +493,7 @@ CostFunction* ComputeMarginalizationPrior(
     const map<const double*, const double*>*
         parameter_block_linearization_states,
     vector<double*>* blanket_parameter_blocks_problem_states,
-    SummaryType* summary) {
+    MarginalizationSummary* summary) {
   CHECK_NOTNULL(blanket_parameter_blocks_problem_states);
 
   const bool copy_parameter_blocks =
@@ -841,21 +841,21 @@ bool MarginalizeOutVariables(
     const map<const double*, const double*>*
         parameter_block_linearization_states,
     SummaryType* summary) {
-  {
-    std::vector<ResidualBlockId> residual_blocks;
-    problem->GetResidualBlocks(&residual_blocks);
-    double maxNorm = 0.0;
-    for (const ResidualBlockId id : residual_blocks) {
-      std::vector<double*> pb;
-      problem->GetParameterBlocksForResidualBlock(id, &pb);
+  // {
+  //   std::vector<ResidualBlockId> residual_blocks;
+  //   problem->GetResidualBlocks(&residual_blocks);
+  //   double maxNorm = 0.0;
+  //   for (const ResidualBlockId id : residual_blocks) {
+  //     std::vector<double*> pb;
+  //     problem->GetParameterBlocksForResidualBlock(id, &pb);
 
-      const CostFunction* cf = problem->GetCostFunctionForResidualBlock(id);
-      Vector residual(cf->num_residuals());
-      cf->Evaluate(pb.data(), residual.data(), nullptr);
-      const double rNorm = residual.norm();
-      maxNorm = std::max(rNorm, maxNorm);
-    }
-  }
+  //     const CostFunction* cf = problem->GetCostFunctionForResidualBlock(id);
+  //     Vector residual(cf->num_residuals());
+  //     cf->Evaluate(pb.data(), residual.data(), nullptr);
+  //     const double rNorm = residual.norm();
+  //     maxNorm = std::max(rNorm, maxNorm);
+  //   }
+  // }
 
   vector<double*> blanket_ordered_parameter_blocks;
   CostFunction* new_cost_function =
@@ -898,7 +898,7 @@ bool MarginalizeOutVariablesSchur(
     std::vector<ResidualBlockId>* marginalization_prior_ids,
     const std::map<const double*, const double*>*
         parameter_block_linearization_states,
-    MarginalizationSummarySchur* summary) {
+    MarginalizationSummary* summary) {
   // Validate the input. parameter_block_linearization_states will be validated
   // later.
   CHECK_NOTNULL(problem);
@@ -923,7 +923,7 @@ bool MarginalizeOutVariablesQR(
     std::vector<ResidualBlockId>* marginalization_prior_ids,
     const std::map<const double*, const double*>*
         parameter_block_linearization_states,
-    MarginalizationSummaryQR* summary) {
+    MarginalizationSummary* summary) {
   // Validate the input. parameter_block_linearization_states will be validated
   // later.
   CHECK_NOTNULL(problem);
