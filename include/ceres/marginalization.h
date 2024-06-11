@@ -139,13 +139,14 @@ struct MarginalizationSummary {
   int blanket_parameter_blocks;
   int blanket_parameters;
   int blanket_parameters_tangent;
+  int blanket_manifolds;
   int subproblem_parameter_blocks;
   int subproblem_parameters;
   int subproblem_residual_blocks;
   int subproblem_residuals;
   double time_subproblem_build;
   double time_subproblem_eval;
-  double time_qr;
+  double time_decomposition;
   double time_total;
   double cost;
 

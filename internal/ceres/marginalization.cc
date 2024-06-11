@@ -4,6 +4,7 @@
 
 #include <Eigen/Eigenvalues>
 #include <fstream>
+#include <iostream>
 #include <memory>
 
 #include "ceres/cost_function.h"
@@ -117,6 +118,14 @@ template <int kSize>
   int sum = 0;
   for (const ParameterBlock* pb : parameter_blocks) {
     sum += pb->TangentSize();
+  }
+  return sum;
+}
+
+[[nodiscard]] int SumSize(const vector<ParameterBlock*>& parameter_blocks) {
+  int sum = 0;
+  for (const ParameterBlock* pb : parameter_blocks) {
+    sum += pb->Size();
   }
   return sum;
 }
@@ -293,6 +302,12 @@ std::unique_ptr<ProblemImpl> BuildProblemWithMarginalizedBlocksAndMarkovBlanket(
           const_cast<LossFunction*>(loss_function),
           parameter_blocks_in_new_problem.data(),
           parameter_blocks_in_new_problem.size());
+
+      // std::cout << "add cost res " << cost_function->num_residuals() << " ";
+      // for (const auto& x : cost_function->parameter_block_sizes()) {
+      //   std::cout << x << " ";
+      // }
+      // std::cout << std::endl;
     }
 
     // Marginalizing a block analytically minimizes it out in the problem. In
@@ -507,6 +522,8 @@ CostFunction* ComputeMarginalizationPrior(
   // recover the Markov blanket parameter blocks in the original problem for use
   // in the marginalization prior cost function.
   std::map<const double*, double*> storage_to_problem_pb_map;
+
+  double start_time = WallTimeInSeconds();
   std::unique_ptr<ProblemImpl> local_problem =
       BuildProblemWithMarginalizedBlocksAndMarkovBlanket(
           external_problem,
@@ -516,6 +533,7 @@ CostFunction* ComputeMarginalizationPrior(
           copy_parameter_blocks ? &problem_pb_to_storage_map : nullptr);
 
   if (!local_problem) {
+    std::cout << "Failed to build subproblem" << std::endl;
     return nullptr;
   }
 
@@ -557,33 +575,49 @@ CostFunction* ComputeMarginalizationPrior(
     }
   }
 
-  if (SumTangentSize(blanket_parameter_blocks) == 0) {
-    return nullptr;
-  }
   const int num_marginalized_blocks =
       marginalized_parameter_blocks_in_loc_prob_ptr->size();
   const int num_blanket_blocks = blanket_parameter_blocks.size();
   const int tan_size_marginalized =
       SumTangentSize(ordered_parameter_blocks_marginalized);
+  const int tan_size_blanked = SumTangentSize(blanket_parameter_blocks);
 
-  if (tan_size_marginalized == 0) {
+  if (summary != nullptr) {
+    // Subproblem summary
+    summary->subproblem_parameter_blocks = local_problem->NumParameterBlocks();
+    summary->subproblem_parameters = local_problem->NumParameters();
+    summary->subproblem_residual_blocks = local_problem->NumResidualBlocks();
+    summary->subproblem_residuals = local_problem->NumResiduals();
+
+    // Marginalized summary
+    summary->marginalized_parameter_blocks = num_marginalized_blocks;
+    summary->marginalized_parameters =
+        SumSize(ordered_parameter_blocks_marginalized);
+    summary->marginalized_parameters_tangent = tan_size_marginalized;
+
+    // Blanket summary
+    summary->blanket_parameter_blocks = num_blanket_blocks;
+    summary->blanket_parameters = SumSize(blanket_parameter_blocks);
+    summary->blanket_parameters_tangent = tan_size_blanked;
+  }
+
+  if (tan_size_marginalized == 0 || tan_size_blanked == 0) {
+    std::cout << "Invalid tangent size" << std::endl;
     return nullptr;
   }
 
   // Get states and manifolds required for the marginalization prior.
-  blanket_parameter_blocks_problem_states->resize(
-      num_blanket_blocks);  // in the external problem
-  vector<Vector> blanket_reference_points(
-      num_blanket_blocks);  // in the new problem
+  blanket_parameter_blocks_problem_states->resize(num_blanket_blocks);
+  vector<Vector> blanket_reference_points(num_blanket_blocks);
   vector<const MarginalizableManifold*> blanket_manifolds(num_blanket_blocks,
                                                           nullptr);
-
+  int blanket_manifolds_count = 0;
   for (int i = 0; i < num_blanket_blocks; ++i) {
     const int size = blanket_parameter_blocks.at(i)->Size();
     double* pb_in_new_problem =
         blanket_parameter_blocks.at(i)->mutable_user_state();
 
-    const double* pb_state = blanket_parameter_blocks.at(i)->state();
+    // const double* pb_state = blanket_parameter_blocks.at(i)->state();
 
     double* pb_in_ext_problem =
         copy_parameter_blocks ? storage_to_problem_pb_map.at(pb_in_new_problem)
@@ -596,8 +630,16 @@ CostFunction* ComputeMarginalizationPrior(
           dynamic_cast<const MarginalizableManifold*>(manifold);
       CHECK(mmanifold) << "Manifold must derive from MarginalizableManifold.";
       blanket_manifolds.at(i) = mmanifold;
+      blanket_manifolds_count++;
     }
   }
+
+  if (summary != nullptr) {
+    summary->blanket_manifolds = blanket_manifolds_count;
+    summary->time_subproblem_build = WallTimeInSeconds() - start_time;
+  }
+
+  start_time = WallTimeInSeconds();
 
   Matrix jtj;
   Matrix jacobian;
@@ -612,6 +654,12 @@ CostFunction* ComputeMarginalizationPrior(
 
   Matrix marginalization_prior_A;
   Vector marginalization_prior_b;
+
+  if (summary != nullptr) {
+    summary->time_subproblem_eval = WallTimeInSeconds() - start_time;
+  }
+
+  start_time = WallTimeInSeconds();
 
   if (summary) {
     if (options.compute_jacobian_condition_number) {
@@ -798,12 +846,23 @@ CostFunction* ComputeMarginalizationPrior(
     }
   }
 
+  if (summary != nullptr) {
+    summary->time_decomposition = WallTimeInSeconds() - start_time;
+  }
+
   if (!IsFinite(marginalization_prior_A)) {
+    std::cout << "Marginalization prior A matrix is not finite" << std::endl;
     return nullptr;
   }
   if (!IsFinite(marginalization_prior_b)) {
+    std::cout << "Marginalization prior b vector is not finite" << std::endl;
     return nullptr;
   }
+
+  // std::cout << "A " << marginalization_prior_A.rows() << " "
+  //           << marginalization_prior_A.cols() << std::endl;
+  // std::cout << "b" << marginalization_prior_b.rows() << " "
+  //           << marginalization_prior_b.cols() << std::endl;
 
   // Extract blocks from A for the marginalization prior cost function.
   vector<Matrix> marginalization_prior_A_blocks(
@@ -822,9 +881,10 @@ CostFunction* ComputeMarginalizationPrior(
     marginalization_prior_A_blocks.at(i) = marginalization_prior_A.block(
         0, jacobian_column_offset, prior_res_dim, tan_size);
     jacobian_column_offset += tan_size;
+
+    // std::cout << "block " << prior_res_dim << " x " << tan_size << std::endl;
   }
 
-  // std::cout << "Create cost\n";
   return new MarginalizationPriorCostFunction(
       std::move(marginalization_prior_A_blocks),
       std::move(marginalization_prior_b),
@@ -849,13 +909,15 @@ bool MarginalizeOutVariables(
   //     std::vector<double*> pb;
   //     problem->GetParameterBlocksForResidualBlock(id, &pb);
 
-  //     const CostFunction* cf = problem->GetCostFunctionForResidualBlock(id);
-  //     Vector residual(cf->num_residuals());
-  //     cf->Evaluate(pb.data(), residual.data(), nullptr);
-  //     const double rNorm = residual.norm();
+  //     const CostFunction* cf =
+  //     problem->GetCostFunctionForResidualBlock(id); Vector
+  //     residual(cf->num_residuals()); cf->Evaluate(pb.data(),
+  //     residual.data(), nullptr); const double rNorm = residual.norm();
   //     maxNorm = std::max(rNorm, maxNorm);
   //   }
   // }
+
+  double start = WallTimeInSeconds();
 
   vector<double*> blanket_ordered_parameter_blocks;
   CostFunction* new_cost_function =
@@ -881,8 +943,13 @@ bool MarginalizeOutVariables(
                                 nullptr,
                                 blanket_ordered_parameter_blocks.data(),
                                 blanket_ordered_parameter_blocks.size());
+
   if (marginalization_prior_ids) {
     *marginalization_prior_ids = {mp_id};
+  }
+
+  if (summary != nullptr) {
+    summary->time_total = WallTimeInSeconds() - start;
   }
 
   return true;
