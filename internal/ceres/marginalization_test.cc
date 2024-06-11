@@ -1,6 +1,8 @@
 // Author: evanlevine138e@gmail.com (Evan Levine)
 
 #include "ceres/marginalization.h"
+#include "ceres/marginalizable_euclidian_manifold.h"
+#include "ceres/marginalizable_quaternion_manifold.h"
 
 #include <Eigen/Eigenvalues>
 #include <bitset>

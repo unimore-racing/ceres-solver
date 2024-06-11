@@ -6,6 +6,8 @@
 //
 
 #include "ceres/rebase.h"
+#include "ceres/marginalizable_euclidian_manifold.h"
+#include "ceres/marginalizable_quaternion_manifold.h"
 
 #include <bitset>
 #include <map>
@@ -15,7 +17,6 @@
 
 #include "ceres/cost_function.h"
 #include "ceres/covariance.h"
-#include "ceres/local_parameterization.h"
 #include "ceres/loss_function.h"
 #include "ceres/manifold.h"
 #include "ceres/parameter_block.h"

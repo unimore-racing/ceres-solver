@@ -6,6 +6,9 @@
 
 #include "ceres/manifold_test_utils.h"
 #include "ceres/marginalizable_manifold.h"
+#include "ceres/marginalizable_euclidian_manifold.h"
+#include "ceres/marginalizable_so3_manifold.h"
+#include "ceres/marginalizable_quaternion_manifold.h"
 #include "ceres/pose2manifold.h"
 #include "ceres/rotation.h"
 // #include "ceres/so2manifold.h"
