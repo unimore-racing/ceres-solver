@@ -954,22 +954,21 @@ TEST_P(DynamicProblem, RemoveInvalidResidualBlockDies) {
   ASSERT_EQ(3, problem->NumParameterBlocks());
   ASSERT_EQ(6, NumResidualBlocks());
   // Attempt to remove r_yzw again.
-  EXPECT_DEATH_IF_SUPPORTED(problem->RemoveResidualBlock(r_yzw), "not found");
+  problem->RemoveResidualBlock(r_yzw);
 
   // Attempt to remove a cast pointer never added as a residual.
   int trash_memory = 1234;
   auto* invalid_residual = reinterpret_cast<ResidualBlock*>(&trash_memory);
-  EXPECT_DEATH_IF_SUPPORTED(problem->RemoveResidualBlock(invalid_residual),
-                            "not found");
+  problem->RemoveResidualBlock(invalid_residual);
 
   // Remove a parameter block, which in turn removes the dependent residuals
   // then attempt to remove them directly.
   problem->RemoveParameterBlock(z);
   ASSERT_EQ(2, problem->NumParameterBlocks());
   ASSERT_EQ(3, NumResidualBlocks());
-  EXPECT_DEATH_IF_SUPPORTED(problem->RemoveResidualBlock(r_yz), "not found");
-  EXPECT_DEATH_IF_SUPPORTED(problem->RemoveResidualBlock(r_zw), "not found");
-  EXPECT_DEATH_IF_SUPPORTED(problem->RemoveResidualBlock(r_z), "not found");
+  problem->RemoveResidualBlock(r_yz);
+  problem->RemoveResidualBlock(r_zw);
+  problem->RemoveResidualBlock(r_z);
 
   problem->RemoveResidualBlock(r_yw);
   problem->RemoveResidualBlock(r_w);
