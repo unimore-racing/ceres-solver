@@ -89,25 +89,26 @@ class MarginalizationPriorCostFunction : public CostFunction {
     }
 
     for (int i = 0; i < num_parameter_blocks; ++i) {
-      const int ambient_size = reference_points_[i].size();
+      if (jacobians[i] != nullptr) {
+        const int ambient_size = reference_points_[i].size();
 
-      if (manifolds_[i] != nullptr) {
-        const int tan_size = GetTangentSizeForBlock(i);
-        const bool success =
-            manifolds_[i]->MinusJacobian2(parameters[i],
-                                                reference_points_[i].data(),
-                                                jacobian_scratch_.data());
-        if (!success)
-        {
-          return false;
+        if (manifolds_[i] != nullptr) {
+          const int tan_size = GetTangentSizeForBlock(i);
+          const bool success =
+              manifolds_[i]->MinusJacobian2(parameters[i],
+                                            reference_points_[i].data(),
+                                            jacobian_scratch_.data());
+          if (!success) {
+            return false;
+          }
+          ConstMatrixRef minus_jacobian(
+              jacobian_scratch_.data(), tan_size, ambient_size);
+          MatrixRef(jacobians[i], num_residuals(), ambient_size) =
+              a_[i] * minus_jacobian;
+        } else {
+          // Euclidean manifold
+          MatrixRef(jacobians[i], num_residuals(), ambient_size) = a_[i];
         }
-        ConstMatrixRef minus_jacobian(
-            jacobian_scratch_.data(), tan_size, ambient_size);
-        MatrixRef(jacobians[i], num_residuals(), ambient_size) =
-            a_[i] * minus_jacobian;
-      } else {
-        // Euclidean manifold
-        MatrixRef(jacobians[i], num_residuals(), ambient_size) = a_[i];
       }
     }
 
