@@ -180,6 +180,10 @@ bool Problem::HasParameterBlock(const double* values) const {
   return impl_->HasParameterBlock(values);
 }
 
+bool Problem::HasResidualBlock(const ResidualBlockId id) const {
+  return impl_->HasResidualBlock(id);
+}
+
 void Problem::GetParameterBlocks(std::vector<double*>* parameter_blocks) const {
   impl_->GetParameterBlocks(parameter_blocks);
 }

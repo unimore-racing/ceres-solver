@@ -139,6 +139,7 @@ class CERES_NO_EXPORT ProblemImpl {
   int ParameterBlockTangentSize(const double* values) const;
 
   bool HasParameterBlock(const double* values) const;
+  bool HasResidualBlock(const ResidualBlockId id) const;
 
   void GetParameterBlocks(std::vector<double*>* parameter_blocks) const;
   void GetResidualBlocks(std::vector<ResidualBlockId>* residual_blocks) const;

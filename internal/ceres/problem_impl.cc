@@ -814,6 +814,16 @@ bool ProblemImpl::HasParameterBlock(const double* values) const {
           parameter_block_map_.end());
 }
 
+bool ProblemImpl::HasResidualBlock(const ResidualBlockId id) const {
+  if (options_.enable_fast_removal) {
+    return residual_block_set_.count(id) > 0;
+  }
+
+  return std::find(program_->residual_blocks().begin(),
+                   program_->residual_blocks().end(),
+                   id) != program_->residual_blocks().end();
+}
+
 void ProblemImpl::GetParameterBlocks(
     std::vector<double*>* parameter_blocks) const {
   CHECK(parameter_blocks != nullptr);

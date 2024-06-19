@@ -368,6 +368,8 @@ class CERES_EXPORT Problem {
   // Is the given parameter block present in this problem or not?
   bool HasParameterBlock(const double* values) const;
 
+  bool HasResidualBlock(const ResidualBlockId id) const;
+
   // Fills the passed parameter_blocks vector with pointers to the parameter
   // blocks currently in the problem. After this call, parameter_block.size() ==
   // NumParameterBlocks.
