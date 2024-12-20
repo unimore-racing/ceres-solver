@@ -40,7 +40,7 @@
 
 namespace ceres {
 
-NormalPrior::NormalPrior(const Matrix& A, Vector b) : A_(A), b_(std::move(b)) {
+NormalPrior::NormalPrior(const Matrix& A, Vector b) : A_(A), b_(b) {
   CHECK_GT(b_.rows(), 0);
   CHECK_GT(A_.rows(), 0);
   CHECK_EQ(b_.rows(), A.cols());
